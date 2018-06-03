@@ -1,0 +1,37 @@
+- hosts: hive
+  gather_facts: no
+  become: true
+  tasks:
+  - name: Ensure Python is installed is at the lastest version
+    raw: yum -y install python
+  - name: Install docker
+    raw: yum -y install docker
+  - name: Start docker
+    raw: systemctl start docker
+  - name: Kill running containers
+    raw: docker kill $(docker ps -q)
+    ignore_errors: yes
+  - name: Add IP addresses
+    raw: ip addr add "{{ item }}" dev enp0s3
+    ignore_errors: yes
+    with_items: "{{ groups['docker_ips'] }}"
+  - name: Start docker container
+    raw: "docker run -d --rm -p {{ item }}:2222:22 -p {{ item }}:80:80 jemisonf/cs312hw7_node"
+    with_items: "{{ groups['docker_ips'] }}"
+  - name: Wait for ssh to start
+    wait_for: 
+      sleep: 5 
+      port: 22
+
+- hosts: docker_ips
+  gather_facts: no
+  become: true
+  tasks:
+  - name: Ensure python3 is installed
+    raw: apk -U add python3 
+  - name: Copy index.html
+    template:
+      src: node_index.html
+      dest: /www/index.html
+  - name: Start nginx
+    raw: nginx

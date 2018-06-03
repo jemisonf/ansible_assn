@@ -1,0 +1,4 @@
+
+PLAY [hive] ********************************************************************
+
+TASK [Ensure Python is installed is at the lastest version] ********************
